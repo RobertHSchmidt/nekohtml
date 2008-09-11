@@ -556,11 +556,10 @@ public class HTMLTagBalancer
         }
 
         // close previous elements
-        // all elements close a <script>
-        // in head, no element has children
-        if ((fElementStack.top > 1 
-        		&& (fElementStack.peek().element.code == HTMLElements.SCRIPT))
-        		|| fElementStack.top > 2 && fElementStack.data[fElementStack.top-2].element.code == HTMLElements.HEAD) {
+        // all elements close a <script> and an unknown element
+        if (fElementStack.top > 1 
+        		&& (fElementStack.peek().element.code == HTMLElements.SCRIPT
+        				|| fElementStack.peek().element == HTMLElements.NO_SUCH_ELEMENT)) {
             final Info info = fElementStack.pop();
             if (fDocumentHandler != null) {
                 callEndElement(info.qname, synthesizedAugs());
@@ -647,9 +646,9 @@ public class HTMLTagBalancer
     public void emptyElement(final QName element, XMLAttributes attrs, Augmentations augs)
         throws XNIException {
         startElement(element, attrs, augs);
-        // browser ignore the closing indication for non empty tags like <form .../> but not for unknown element
+        // browser ignore the closing indication for non empty tags like <form .../>
         final HTMLElements.Element elem = getElement(element.rawname);
-        if (elem.isEmpty() || elem.code == HTMLElements.UNKNOWN) {
+        if (elem.isEmpty()) {
         	endElement(element, augs);
         }
     } // emptyElement(QName,XMLAttributes,Augmentations)
@@ -869,12 +868,12 @@ public class HTMLTagBalancer
 
         // find unbalanced inline elements
         if (depth > 1 && elem.isInline()) {
-            final int size = fElementStack.top;
+            int size = fElementStack.top;
             fInlineStack.top = 0;
             for (int i = 0; i < depth - 1; i++) {
-                final Info info = fElementStack.data[size - i - 1];
-                final HTMLElements.Element pelem = info.element;
-                if (pelem.isInline() || pelem.code == HTMLElements.FONT) { // TODO: investigate if only FONT
+                Info info = fElementStack.data[size - i - 1];
+                HTMLElements.Element pelem = info.element;
+                if (pelem.isInline()) {
                     // NOTE: I don't have to make a copy of the info because
                     //       it will just be popped off of the element stack
                     //       as soon as we close it, anyway.
